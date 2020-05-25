@@ -63,19 +63,34 @@ function get_terminal_lines_cols() {
 			$columns = $m['val'];
 		}
 	} else {
-		exec( 'resize', $output, $status );
+		// Lines
+		exec( 'tput lines', $lines, $status );
 
-		if ( 0 !== $status ) {
-			// We cannot fetch information, bail.
+		if ( $status !== 0 ) {
+			// tput lines can't give us the lines on this terminal, bail.
 			return [ $lines, $columns ];
 		}
 
-		foreach ( $output as $line ) {
-			if ( ! preg_match( '/(?<key>(COLUMNS|LINES))=(?<val>[0-9]+)/', $line, $m ) ) {
-				continue;
-			}
-			$key    = strtolower( $m['key'] );
-			${$key} = (int) $m['val'];
+		if ( ! empty( $lines ) && is_numeric( $lines[0] ) ) {
+			$lines = abs( intval( $lines[0] ) );
+		} else {
+			// Unexpected value, bail.
+			return [ $lines, $columns ];
+		}
+
+		// Columns
+		exec( 'tput cols', $columns, $status );
+
+		if ( $status !== 0 ) {
+			// tput cols can't give us the columns on this terminal, bail.
+			return [ $lines, $columns ];
+		}
+
+		if ( ! empty( $columns ) && is_numeric( $columns[0] ) ) {
+			$columns = abs( intval( $columns[0] ) );
+		} else {
+			// Unexpected value, bail.
+			return [ $lines, $columns ];
 		}
 	}
 
